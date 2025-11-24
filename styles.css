@@ -28,7 +28,7 @@ html,body{height:100%;margin:0;font-family:var(--ui-font);background:var(--bg-1)
 .previewHeader .meta{color:var(--muted);font-size:13px;margin-top:2px}
 .controlsInline{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px}
 .controlsInline select{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.03);border:none;color:#ffffff;}
-.controlsInline select option {color:#ffffff;}
+.controlsInline select option {color:#000000;}
 
 /* 画布和控件并列放置，二者尺寸受视口控制且不产生滚动 */
 .canvasAndControls{display:flex;gap:14px;align-items:stretch;flex:1 1 auto;height:calc(100% - 56px)}
