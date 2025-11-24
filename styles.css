@@ -1,0 +1,86 @@
+:root{
+  --bg-1: linear-gradient(180deg,#071028 0%, #081426 40%, #071022 100%);
+  --panel: rgba(255,255,255,0.03);
+  --muted: #9fb0cf;
+  --accent: #3f7be4;
+  --accent-2: #f4b942;
+  --card-radius: 14px;
+  --ui-font: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+*{box-sizing:border-box}
+
+/* 全局禁止任何浏览器滚动条，所有 UI 元素必须在视口内自适应 */
+html,body{height:100%;margin:0;font-family:var(--ui-font);background:var(--bg-1);color:#e6eef8;-webkit-font-smoothing:antialiased;overflow:hidden}
+
+/* 应用主容器：固定视口高度，两栏布局 */
+.app{height:100vh;display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;box-sizing:border-box}
+
+/* 侧栏：固定宽度，无内部滚动 */
+.sidebar{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:var(--card-radius);border:1px solid rgba(255,255,255,0.04);background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));box-shadow:0 12px 40px rgba(2,6,23,0.6);height:calc(100vh - 36px);overflow:hidden}
+.brand .title{margin:0;font-size:18px}
+.brand .subtitle{margin:4px 0 0 0;color:var(--muted);font-size:13px}
+.sidebarInfo .sidebarFoot{margin-top:auto;color:var(--muted);font-size:12px;text-align:left}
+
+/* 主区：竖向布局 */
+.main{display:flex;flex-direction:column;gap:12px;height:100%}
+.previewTop{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.previewHeader h3{margin:0;font-size:16px}
+.previewHeader .meta{color:var(--muted);font-size:13px;margin-top:2px}
+.controlsInline{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px}
+.controlsInline select{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.03);border:none;color:#ffffff;}
+.controlsInline select option {color:#ffffff;}
+
+/* 画布和控件并列放置，二者尺寸受视口控制且不产生滚动 */
+.canvasAndControls{display:flex;gap:14px;align-items:stretch;flex:1 1 auto;height:calc(100% - 56px)}
+.canvasWrap{flex:1 1 55%;min-width:0;background:linear-gradient(180deg,#0b1626,#071224);border-radius:12px;padding:14px;display:flex;justify-content:center;align-items:center;box-shadow:0 12px 40px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.02);overflow:hidden}
+.controls{flex:1 1 45%;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));padding:14px;border-radius:10px;box-sizing:border-box;min-width:320px;overflow:hidden}
+
+/* 控件内部 */
+.fieldLabel{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+textarea{width:100%;height:160px;resize:none;padding:12px;border-radius:10px;border:none;background:var(--panel);color:inherit;font-size:15px;outline:none;line-height:1.45;box-sizing:border-box}
+.formRow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.field{flex:1 1 0;min-width:120px}
+.field input[type="number"],.field select{width:100%;padding:8px 10px;border-radius:8px;border:none;background:rgba(255,255,255,0.03);color:#ffffff;outline:none;box-sizing:border-box}
+.field select option {color:#000000;}
+.colorPreviewRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.colorPreview{display:flex;gap:8px;align-items:center;width:calc(50% - 6px)}
+.colorPreview .label{color:var(--muted);font-size:12px;width:68px}
+.swPreview{height:34px;width:52px;border-radius:8px;border:1px solid rgba(0,0,0,0.25);box-shadow:0 4px 14px rgba(2,6,23,0.45);cursor:pointer}
+
+/* actions */
+.actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.btn{padding:10px 12px;border-radius:10px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:all .12s ease;font-weight:600}
+.btn:hover{transform:translateY(-2px);color:#fff}
+.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071022;border:none}
+.btn.ghost{background:transparent;color:var(--muted);border:1px dashed rgba(255,255,255,0.03)}
+
+/* canvas 元素显示为像素化渲染（按容器缩放） */
+canvas{background:transparent;max-width:100%;max-height:100%;border-radius:8px;display:block;box-shadow:0 8px 30px rgba(2,6,23,0.5);width:auto;height:auto;image-rendering:pixelated}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center}
+.modal.hidden{display:none}
+.modalBackdrop{position:absolute;inset:0;background:rgba(3,7,18,0.6)}
+.modalCard{position:relative;width:680px;max-width:94%;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 20px 60px rgba(2,6,23,0.7);z-index:2;box-sizing:border-box;overflow:hidden}
+.modalHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mhTitle{font-weight:700}
+.closeBtn{background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabBtn{padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,0.02);color:var(--muted);cursor:pointer}
+.tabBtn.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#071022}
+.paletteGrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding:6px;box-sizing:border-box;align-items:center;justify-items:stretch}
+.mSwatch{height:40px;border-radius:8px;border:1px solid rgba(0,0,0,0.18);cursor:pointer;transition:transform .10s ease;box-shadow:0 8px 22px rgba(2,6,23,0.45)}
+.mSwatch:hover{transform:translateY(-4px)}
+.modalFoot{margin-top:8px;color:var(--muted);font-size:12px}
+
+/* responsive: 在窄屏时把布局竖直排列并保持无滚动 */
+@media (max-width:980px){
+  .app{grid-template-columns:1fr;grid-auto-rows:1fr}
+  .sidebar{order:2;height:auto;display:flex;align-items:center;justify-content:center;padding:10px}
+  .main{order:1;height:100%}
+  .canvasAndControls{flex-direction:column;gap:10px;height:calc(100% - 56px)}
+  .canvasWrap{flex:1 1 auto;min-height:40%}
+  .controls{flex:0 0 auto;min-height:33%}
+  .paletteGrid{grid-template-columns:repeat(6,1fr)}
+  .colorPreview{width:50%}
+}
