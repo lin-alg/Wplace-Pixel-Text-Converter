@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>像素字转换器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar" aria-label="侧栏">
+      <header class="brand">
+        <h1 class="title">像素字转换器</h1>
+        <p class="subtitle">使用 64 色画板，把任意 Unicode 文本转换为像素化艺术字并导出图片</p>
+      </header>
+
+      <section class="sidebarInfo">
+        <p class="sidebarFoot">点击任一色块打开画板；画板分「非付费色」与「付费色」。悬停显示颜色名称。</p>
+      </section>
+    </aside>
+
+    <section class="main">
+      <div class="previewTop">
+        <div class="previewHeader">
+          <h3>预览</h3>
+          <div class="meta">使用画板 64 色映射输出像素艺术字</div>
+        </div>
+
+        <div class="controlsInline">
+          <label>背景</label>
+          <select id="bgMode"><option value="transparent" selected>透明</option><option value="solid">纯色</option><option value="checker">棋盘</option></select>
+        </div>
+      </div>
+
+      <div class="canvasAndControls">
+        <div id="canvasWrap" class="canvasWrap">
+          <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <section class="controls" aria-label="Controls Panel">
+          <label class="fieldLabel">输入文字</label>
+          <textarea id="textInput">像素 字示例 你好</textarea>
+
+          <div class="formRow">
+            <div class="field">
+              <label class="fieldLabel">字体</label>
+              <select id="fontFamily">
+                <option>Arial</option>
+                <option>Helvetica</option>
+                <option>Times New Roman</option>
+                <option>Courier New</option>
+                <option>Georgia</option>
+                <option>SimSun</option>
+                <option>SimHei</option>
+                <option>Microsoft YaHei</option>
+                <option>PingFang SC</option>
+                <option>Noto Sans SC</option>
+                <option>Source Han Sans CN</option>
+                <option>Serif</option>
+                <option>Sans-Serif</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="fieldLabel">字号（px）</label>
+              <input id="fontSize" type="number" min="8" max="400" value="120" />
+            </div>
+          </div>
+
+          <div class="formRow">
+            <div class="field">
+              <label class="fieldLabel">粗细</label>
+              <select id="fontWeight"><option value="300">Light</option><option value="400" selected>Normal</option><option value="600">Semi-Bold</option><option value="700">Bold</option></select>
+            </div>
+
+            <div class="field">
+              <label class="fieldLabel">斜体</label>
+              <select id="fontStyle"><option value="normal" selected>否</option><option value="italic">是</option></select>
+            </div>
+          </div>
+
+          <div class="formRow">
+            <div class="field">
+              <label class="fieldLabel">颗粒度（像素大小）</label>
+              <input id="pixelSize" type="number" min="1" max="40" value="8" />
+            </div>
+
+            <div class="field">
+              <label class="fieldLabel">画布宽（px）</label>
+              <input id="canvasW" type="number" min="64" max="5000" value="1200" />
+            </div>
+
+            <div class="field">
+              <label class="fieldLabel">画布高（px）</label>
+              <input id="canvasH" type="number" min="64" max="5000" value="400" />
+            </div>
+          </div>
+
+          <div class="formRow">
+            <div class="field">
+              <label class="fieldLabel">艺术字效果</label>
+              <select id="artEffect">
+                <option value="none" selected>无</option>
+                <option value="outline">轮廓（描边）</option>
+                <option value="shadow">投影</option>
+                <option value="gradient">渐变（两色）</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="colorPreviewRow" id="previewRow">
+            <div class="colorPreview">
+              <div class="label" id="labelFont">字体色</div>
+              <button id="previewFont" class="swPreview pickerBtn" data-target="font" title="点击选择颜色"></button>
+            </div>
+
+            <div class="colorPreview" id="effectPreviewAWrap">
+              <div class="label" id="labelEffectA">效果色 A</div>
+              <button id="previewEffectA" class="swPreview pickerBtn" data-target="effectA" title="点击选择颜色"></button>
+            </div>
+
+            <div class="colorPreview" id="effectPreviewBWrap">
+              <div class="label" id="labelEffectB">效果色 B</div>
+              <button id="previewEffectB" class="swPreview pickerBtn" data-target="effectB" title="点击选择颜色"></button>
+            </div>
+
+            <div class="colorPreview">
+              <div class="label" id="labelBg">背景</div>
+              <button id="previewBg" class="swPreview pickerBtn" data-target="bg" title="点击选择颜色"></button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="renderBtn" class="btn primary">渲染预览</button>
+            <button id="downloadBtn" class="btn">导出 PNG</button>
+            <button id="resetBtn" class="btn ghost">重置</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- 弹出画板模态框 -->
+  <div id="paletteModal" class="modal hidden" aria-hidden="true">
+    <div class="modalBackdrop"></div>
+    <div class="modalCard" role="dialog" aria-modal="true" aria-label="色板选择">
+      <div class="modalHeader">
+        <div class="mhTitle">选择颜色</div>
+        <button id="closeModal" class="closeBtn" aria-label="关闭">&times;</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tabBtn active" data-tab="free">非付费色</button>
+        <button class="tabBtn" data-tab="paid">付费色</button>
+      </div>
+
+      <div class="paletteGrid" id="modalPalette"></div>
+      <div class="modalFoot"><small>悬停查看颜色名称；点击选择并赋值到当前目标。</small></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
