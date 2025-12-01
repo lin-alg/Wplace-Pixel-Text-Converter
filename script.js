@@ -472,15 +472,15 @@ downloadBtn.addEventListener('click', ()=>{
 });
 
 resetBtn.addEventListener('click', ()=>{
-  textInput.value = 'Hello Wplace\
-你好 Wplace';
+  textInput.value = ' Hello Wplace\
+ 你好 Wplace';
   fontFamily.value = 'Dingmao Pixel';
   fontSize.value = 8;
   fontWeight.value = 400;
   fontStyle.value = 'normal';
   pixelSize.value = 1;
   thresholdInput.value = 0.5; 
-  canvasW.value = 43;
+  canvasW.value = 45;
   canvasH.value = 8; // 重置时确保是单行/列高度
   artEffect.value = 'none';
   bgMode.value = 'transparent';
@@ -567,12 +567,13 @@ const ALL_TRANSLATIONS = {
     // 侧栏 (Sidebar)
     "Wplace像素字转换器": "Wplace Pixel Text Converter",
     "使用 64 色画板，将任意文本转换为Wplace像素化艺术字并导出图片": "Use a 64-color palette to convert any text into Wplace pixel art and export as an image",
+    "项目 GitHub 页面": "Github repo - Powered by linalg",
     "说明": "Instructions",
     "1. 点击任一颜色块打开画板；画板分「非付费色」与「付费色」。光标悬停显示颜色名称。": "1. Click any color button to open the palette; it is split into 'Free' and 'Paid' colors. Hover to see the color name.",
     "2. 丁卯点阵体的字号应设置为原字体大小加一的整倍数。比如丁卯点阵体（9px）的字体大小就要设置成10px的整倍数。": "2. The Dinkie Bitmap font size should be set to an integer multiple of the font's base size plus one. E.g., for the Dinkie Bitmap(9px), the size should be a multiple of 10px.",
     "3. 绘制模式分为横排和竖排。横排模式对应单行高和总宽，竖排模式对应单列宽和总高。": "3. The drawing mode has two options : horizontal and vertical. Horizontal mode corresponds to single row height and total column width; vertical mode corresponds to single column width and total row height.",
     "4. 绘制横排/竖排模式时，单行高/单列宽请设置为字号大小加2N。例如当字号为8时，单行高/单列宽的取值范围为8，10，12……": "4. When drawing in horizontal/vertical mode, single row height / column width should be set to font size plus 2N. For example, when font size is 8, the row height / column width should be 8, 10, 12, etc.",
-    "5. 若字体样式不满足预期，请点击“渲染预览”按钮重新渲染。若有按钮被遮住，请用Ctrl+滚轮调整页面比例。": "5. If the font style is not as expected, click the 'Render Preview' button to re-render. If any button is obscured, use Ctrl + Scroll to adjust the page zoom.",
+    "5. 若字体样式不满足预期，请点击“渲染预览”按钮重新渲染。若有按钮被遮住，请用Ctrl+滚轮调整页面比例。": "5. If the font style is not as expected, adjust font and canvas size or click the 'Render Preview' button to re-render. If any button is obscured, use Ctrl + Scroll to adjust the page zoom.",
 
     // 主区 - 预览 (Main - Preview)
     "预览": "Preview",
@@ -733,7 +734,7 @@ function translatePage(toEnglish) {
             document.title = titleKey;
         }
     }
-    
+
     // 3. 更新动态生成的颜色标签文字
     // 必须调用，因为 refreshEffectLabels 会根据 artEffect.value 动态设置标签文本
     refreshEffectLabels();
