@@ -74,6 +74,8 @@ const artEffect = el('artEffect');
 const bgMode = el('bgMode');
 const canvasWrap = el('canvasWrap');
 
+const writingMode = el('writingMode'); // <<< 新增：获取书写方向控制
+
 const previewFont = el('previewFont');
 const previewEffectA = el('previewEffectA');
 const previewEffectB = el('previewEffectB');
@@ -130,34 +132,29 @@ function updatePreviews(){
   apply(previewBg, STATE.bgIdx);
 }
 
-// 绘制超高分辨率的源文本
-// **[修改]** 接受 userFontSize 参数
-function drawSourceText(scaleFactor, userFontSize){
-  const baseW = parseInt(canvasW.value,10);
-  const baseH = parseInt(canvasH.value,10);
-  
-  const w = baseW * scaleFactor;
-  const h = baseH * scaleFactor;
+// 绘制单行超高分辨率的源文本
+// 接收要绘制的文本内容作为参数
+// 添加了 isVertical 参数
+function drawSourceText(scaleFactor, userFontSize, text, isVertical){ // <<< 新增 isVertical 参数
+  // offscreenCanvas 尺寸由 renderPixelArt 确定并设置
+  const w = offscreenCanvas.width;
+  const h = offscreenCanvas.height;
 
-  offscreenCanvas.width = w; 
-  offscreenCanvas.height = h;
   const sctx = offCtx;
-  
   sctx.clearRect(0,0,w,h);
   
-  // **[修改]** 使用传入的 userFontSize
-  // const baseSize = parseInt(fontSize.value,10); // 原代码
-  const scaledSize = userFontSize * scaleFactor; // 保证等比放大，且放大后的字号足够大
+  const scaledSize = userFontSize * scaleFactor;
 
   const weight = fontWeight.value || '400';
   const style = fontStyle.value || 'normal';
   const family = fontFamily.value || 'Dingmao Pixel';
   
-  sctx.textBaseline = 'top';
-  sctx.textAlign = 'left';
+  // 文本绘制的基线设置为 'top'
+  sctx.textBaseline = 'top'; 
+  
+  // 字体设置
   sctx.font = `${style} normal ${weight} ${scaledSize}px ${family}`;
 
-  const text = textInput.value || '';
   const x = 0;
   const y = 0;
 
@@ -165,135 +162,252 @@ function drawSourceText(scaleFactor, userFontSize){
   const effA = PAL[STATE.effectAIdx];
   const effB = PAL[STATE.effectBIdx];
   const fontColorStr = fontC && fontC.a===0 ? 'rgba(0,0,0,0)' : `rgb(${fontC.r},${fontC.g},${fontC.b})`;
+  
+  const fillStyle = (artEffect.value === 'gradient') ?
+    (function(){
+      const a = effA || {r:0,g:0,b:0};
+      const b = effB || {r:255,g:255,b:255};
+      // 渐变色轴：水平模式下是单行高，垂直模式下是列的实际高度
+      const gradientEnd = isVertical ? text.length * scaledSize : scaledSize;
+      const grd = sctx.createLinearGradient(0, y, 0, y + gradientEnd);
+      grd.addColorStop(0, `rgb(${a.r},${a.g},${a.b})`);
+      grd.addColorStop(1, `rgb(${b.r},${b.g},${b.b})`);
+      return grd;
+    })() : fontColorStr;
 
-  if (artEffect.value === 'shadow'){
-    const sc = effA && effA.a===0 ? 'rgba(0,0,0,0)' : `rgb(${effA.r},${effA.g},${effA.b})`;
-    const blur = scaledSize * 0.08;
-    const off = scaledSize * 0.05;
-    sctx.save();
-    sctx.shadowColor = sc;
-    sctx.shadowBlur = blur;
-    sctx.shadowOffsetX = off;
-    sctx.shadowOffsetY = off;
-    sctx.fillStyle = fontColorStr;
-    sctx.fillText(text, x, y);
-    sctx.restore();
-  } else if (artEffect.value === 'outline'){
-    const outer = effA && effA.a===0 ? '#000000' : `rgb(${effA.r},${effA.g},${effA.b})`;
-    const inner = effB && effB.a===0 ? fontColorStr : `rgb(${effB.r},${effB.g},${effB.b})`;
-    sctx.lineWidth = Math.max(2 * scaleFactor, scaledSize*0.06);
-    sctx.strokeStyle = outer;
-    sctx.strokeText(text, x, y);
-    sctx.fillStyle = inner;
-    sctx.fillText(text, x, y);
-  } else if (artEffect.value === 'gradient'){
-    const a = effA || {r:0,g:0,b:0};
-    const b = effB || {r:255,g:255,b:255};
-    const grd = sctx.createLinearGradient(0, y - scaledSize/2, 0, y + scaledSize/2);
-    grd.addColorStop(0, `rgb(${a.r},${a.g},${a.b})`);
-    grd.addColorStop(1, `rgb(${b.r},${b.g},${b.b})`);
-    sctx.fillStyle = grd;
-    sctx.fillText(text, x, y);
+  sctx.fillStyle = fillStyle;
+  
+  // ====================== 垂直书写模式逻辑 ======================
+  if (isVertical) {
+      sctx.textAlign = 'center'; // 垂直模式下，文本在列宽方向上居中对齐
+
+      // 绘制每个字符
+      Array.from(text).forEach((char, charIndex) => {
+          // charX 是列宽方向的中心点
+          const charX = w / 2;
+          // charY 是垂直堆叠的起始位置
+          const charY = y + charIndex * scaledSize;
+
+          if (artEffect.value === 'shadow'){
+              const sc = effA && effA.a===0 ? 'rgba(0,0,0,0)' : `rgb(${effA.r},${effA.g},${effA.b})`;
+              const blur = scaledSize * 0.08;
+              const off = scaledSize * 0.05;
+              sctx.save();
+              sctx.shadowColor = sc;
+              sctx.shadowBlur = blur;
+              sctx.shadowOffsetX = off;
+              sctx.shadowOffsetY = off;
+              sctx.fillText(char, charX, charY);
+              sctx.restore();
+          } else if (artEffect.value === 'outline'){
+              const outer = effA && effA.a===0 ? '#000000' : `rgb(${effA.r},${effA.g},${effA.b})`;
+              const inner = effB && effB.a===0 ? fontColorStr : `rgb(${effB.r},${effB.g},${effB.b})`;
+              sctx.lineWidth = Math.max(2 * scaleFactor, scaledSize*0.06);
+              sctx.strokeStyle = outer;
+              sctx.strokeText(char, charX, charY);
+              sctx.fillStyle = inner;
+              sctx.fillText(char, charX, charY);
+          } else {
+              sctx.fillText(char, charX, charY);
+          }
+      });
+      
   } else {
-    sctx.fillStyle = fontColorStr;
-    sctx.fillText(text, x, y);
+    // ====================== 水平书写模式逻辑 (保持原有) ======================
+    sctx.textAlign = 'left';
+
+    if (artEffect.value === 'shadow'){
+      const sc = effA && effA.a===0 ? 'rgba(0,0,0,0)' : `rgb(${effA.r},${effA.g},${effA.b})`;
+      const blur = scaledSize * 0.08;
+      const off = scaledSize * 0.05;
+      sctx.save();
+      sctx.shadowColor = sc;
+      sctx.shadowBlur = blur;
+      sctx.shadowOffsetX = off;
+      sctx.shadowOffsetY = off;
+      sctx.fillText(text, x, y); // 使用传入的 text
+      sctx.restore();
+    } else if (artEffect.value === 'outline'){
+      const outer = effA && effA.a===0 ? '#000000' : `rgb(${effA.r},${effA.g},${effA.b})`;
+      const inner = effB && effB.a===0 ? fontColorStr : `rgb(${effB.r},${effB.g},${effB.b})`;
+      sctx.lineWidth = Math.max(2 * scaleFactor, scaledSize*0.06);
+      sctx.strokeStyle = outer;
+      sctx.strokeText(text, x, y); // 使用传入的 text
+      sctx.fillStyle = inner;
+      sctx.fillText(text, x, y); // 使用传入的 text
+    } else {
+      sctx.fillText(text, x, y); // 使用传入的 text
+    }
   }
 }
 
+// 渲染像素艺术：处理多行文本拼接 (新增竖排逻辑)
 function renderPixelArt() {
   const userFontSize = parseInt(fontSize.value, 10);
-  const targetW      = parseInt(canvasW.value, 10);
-  const targetH      = parseInt(canvasH.value, 10);
+  const targetUnitW  = parseInt(canvasW.value, 10); // 水平模式下是行宽，垂直模式下是列宽
+  const targetUnitH  = parseInt(canvasH.value, 10); // 水平模式下是单行高，垂直模式下是单列高
   const pSize        = parseInt(pixelSize.value, 10);
-  const currentFontFamily = fontFamily.value; // **[新增]** 获取当前字体
+  const currentFontFamily = fontFamily.value; 
+  const isVertical = writingMode.value === 'vertical'; // <<< 获取书写方向
 
-  // 用户手动输入的密度阈值（0.01~1.00），你原来的滑块
+  // 分割文本
+  const lines = (textInput.value || '').split('\n').filter(l => l.trim().length > 0); // 过滤空行
+  const totalUnits = lines.length; // 水平模式下是总行数，垂直模式下是总列数
+
+  // 用户手动输入的密度阈值
   const manualDensityThreshold = thresholdInput && thresholdInput.value 
     ? parseFloat(thresholdInput.value) 
     : 0.5;
 
   // ====================== 3000px 暴力超采样（或点阵字优化） ======================
-  const BASE_FONT_SIZE = 50;                      // 基准字号，用于固定倍率
-  const ULTRA_TARGET = 3000;                      // 目标字体高度 ≈3000px
-  const HARD_MAX = 16384;                         // 浏览器单边安全上限
+  const BASE_FONT_SIZE = 50;
+  const ULTRA_TARGET = 3000;
+  const HARD_MAX = 16384;
 
   let scaleFactor;
   let finalDensityThreshold;
 
-  // **[新增逻辑]** 丁卯点阵体和小字号的特殊处理：强制放大到字号 >= 100，并固定阈值为 0.1
+  // 丁卯点阵体和小字号的特殊处理
   if (currentFontFamily === 'Dingmao Pixel' && userFontSize < 100) {
-    // 1. 乘以最小整数倍让它大于等于 100
     let scaleOverride = Math.ceil(100 / userFontSize);
-    scaleFactor = Math.max(2, scaleOverride); // 确保至少是 2 倍
-    
-    // 2. 固定二值化阈值为 0.1 (覆盖率阈值)
+    scaleFactor = Math.max(2, scaleOverride);
     finalDensityThreshold = 0.1;
-    
   } else {
     // 默认的 3000px 暴力超采样逻辑
     scaleFactor = Math.floor(ULTRA_TARGET / BASE_FONT_SIZE); 
-    finalDensityThreshold = manualDensityThreshold; // 使用用户输入的阈值
+    finalDensityThreshold = manualDensityThreshold;
   }
   
-  // HARD_MAX 限制必须应用于两种情况
+  // HARD_MAX 限制
   scaleFactor = Math.min(scaleFactor,
-    Math.floor(HARD_MAX / Math.max(targetW, 1)),
-    Math.floor(HARD_MAX / Math.max(targetH, 1))
+    Math.floor(HARD_MAX / Math.max(targetUnitW, 1)),
+    Math.floor(HARD_MAX / Math.max(targetUnitH, 1)) 
   );
-  scaleFactor = Math.max(2, scaleFactor);         // 保证至少 2 倍，整数倍
+  scaleFactor = Math.max(2, scaleFactor);
 
-  // **[修改]** 传入 userFontSize
-  drawSourceText(scaleFactor, userFontSize);
+  // ====================== 1. 多行/列渲染和拼接 ======================
+  const srcUnitW = targetUnitW * scaleFactor;
+  const srcUnitH = targetUnitH * scaleFactor;
 
-  // ====================== 目标画布 & 背景 ======================
-  previewCanvas.width  = targetW;
-  previewCanvas.height = targetH;
-  ctx.clearRect(0, 0, targetW, targetH);
+  let finalTargetW, finalTargetH; // 最终预览画布尺寸
+  let fullSourceW, fullSourceH;   // 最终高分辨率源图尺寸
+  let maxLineLength = 0;
+  lines.forEach(line => maxLineLength = Math.max(maxLineLength, line.length));
+
+  if (isVertical) {
+      // 垂直模式: 
+      // 最终画布的宽度是 (列数 * 列宽)
+      finalTargetW = totalUnits * targetUnitW;
+      
+      // 最终高度应由最长列的字符数决定，并转换为像素高度，且不能小于用户设定的 targetUnitH
+      const calculatedH = maxLineLength * userFontSize;
+      finalTargetH = Math.max(targetUnitH, calculatedH);
+      
+      fullSourceW = finalTargetW * scaleFactor;
+      fullSourceH = finalTargetH * scaleFactor;
+
+  } else {
+      // 水平模式: 
+      // 最终画布的宽度是 (单行宽), 高度是 (行数 * 单行高)。
+      finalTargetW = targetUnitW;
+      finalTargetH = totalUnits * targetUnitH;
+      fullSourceW = finalTargetW * scaleFactor;
+      fullSourceH = finalTargetH * scaleFactor;
+  }
+  
+  // 创建一个最终的高分辨率源画布来拼接每一行/列
+  const fullSourceCanvas = document.createElement('canvas');
+  fullSourceCanvas.width = fullSourceW;
+  fullSourceCanvas.height = fullSourceH;
+  const fullSourceCtx = fullSourceCanvas.getContext('2d', { willReadFrequently: true });
+
+  // 循环绘制每一行/列并拼接
+  lines.forEach((lineText, index) => {
+      let currentSrcW = srcUnitW;
+      let currentSrcH = srcUnitH;
+      
+      if (isVertical) {
+          // 垂直模式: offscreenCanvas 的高度需要等于最终源图的高度
+          currentSrcH = fullSourceH; 
+          offscreenCanvas.width = currentSrcW;
+          offscreenCanvas.height = currentSrcH;
+      } else {
+          // 水平模式: offscreenCanvas 尺寸为 [单行宽] x [单行高]
+          offscreenCanvas.width = currentSrcW;
+          offscreenCanvas.height = currentSrcH;
+      }
+      
+      // 1a. 调用 drawSourceText 绘制当前行/列
+      drawSourceText(scaleFactor, userFontSize, lineText, isVertical); 
+      
+      // 1b. 计算目标位置并复制到 fullSourceCanvas
+      if (isVertical) {
+          // 垂直模式: 从右到左 (RTL) 拼接列
+          const destX = fullSourceW - (index + 1) * srcUnitW; // index=0 对应最右边的列
+          const destY = 0; 
+          
+          // 复制 offscreenCanvas 的内容（一个垂直列）到 fullSourceCanvas
+          fullSourceCtx.drawImage(offscreenCanvas, 0, 0, currentSrcW, currentSrcH, destX, destY, srcUnitW, fullSourceH);
+          
+      } else {
+          // 水平模式: 从上到下 (TTB) 拼接行
+          const destY = index * srcUnitH;
+          fullSourceCtx.drawImage(offscreenCanvas, 0, 0, currentSrcW, currentSrcH, 0, destY, fullSourceW, srcUnitH);
+      }
+  });
+
+
+  // ====================== 2. 目标画布 & 背景 (设置最终尺寸) ======================
+  previewCanvas.width  = finalTargetW;
+  previewCanvas.height = finalTargetH;
+  ctx.clearRect(0, 0, finalTargetW, finalTargetH);
 
   if (bgMode.value === 'checker') {
     const s = 16;
-    for (let y = 0; y < targetH; y += s)
-      for (let x = 0; x < targetW; x += s)
+    for (let y = 0; y < finalTargetH; y += s)
+      for (let x = 0; x < finalTargetW; x += s)
         ctx.fillStyle = ((x/s + y/s) % 2 === 0) ? '#f0f6ff22' : '#d8e6ff22',
         ctx.fillRect(x, y, s, s);
   } else if (bgMode.value === 'solid') {
     const c = PAL[STATE.bgIdx];
     ctx.fillStyle = c && c.a === 0 ? 'transparent' : `rgb(${c.r},${c.g},${c.b})`;
-    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.fillRect(0, 0, finalTargetW, finalTargetH);
   }
 
-  // ====================== 暴力全采样（步长1 + alpha≥128） ======================
-  const srcW = offscreenCanvas.width;
-  const srcH = offscreenCanvas.height;
-  const srcData = offCtx.getImageData(0, 0, srcW, srcH).data;
+  // ====================== 3. 暴力全采样（基于拼接后的源图） ======================
+  const finalSrcW = fullSourceCanvas.width;
+  const finalSrcH = fullSourceCanvas.height;
+  const finalSrcData = fullSourceCtx.getImageData(0, 0, finalSrcW, finalSrcH).data;
 
   const blockSize = pSize * scaleFactor;          // 完美整数
 
-  for (let ty = 0; ty < targetH; ty += pSize) {
-    for (let tx = 0; tx < targetW; tx += pSize) {
-      const sx = tx * scaleFactor;                // 整数
-      const sy = ty * scaleFactor;                // 整数
+  // 循环遍历最终像素画布的区域
+  for (let ty = 0; ty < finalTargetH; ty += pSize) {
+    for (let tx = 0; tx < finalTargetW; tx += pSize) {
+      const sx = tx * scaleFactor;                
+      const sy = ty * scaleFactor;                
 
       let solidCount = 0;          // alpha ≥ 128 的像素数
       let totalCount = 0;
       let rSum = 0, gSum = 0, bSum = 0;
 
-      const maxY = Math.min(sy + blockSize, srcH);
-      const maxX = Math.min(sx + blockSize, srcW);
+      const maxY = Math.min(sy + blockSize, finalSrcH);
+      const maxX = Math.min(sx + blockSize, finalSrcW);
 
+      // 在高分辨率源图上采样
       for (let iy = sy; iy < maxY; iy++) {
-        const rowOffset = iy * srcW;
+        const rowOffset = iy * finalSrcW;
         for (let ix = sx; ix < maxX; ix++) {
           const idx = (rowOffset + ix) * 4;
-          const a = srcData[idx + 3];
+          const a = finalSrcData[idx + 3];
 
           totalCount++;
 
-          if (a >= 128) {                    // 固定透明度硬阈值 250
+          if (a >= 128) {                    // 固定透明度硬阈值 128
             solidCount++;
-            rSum += srcData[idx];
-            gSum += srcData[idx + 1];
-            bSum += srcData[idx + 2];
+            rSum += finalSrcData[idx];
+            gSum += finalSrcData[idx + 1];
+            bSum += finalSrcData[idx + 2];
           }
         }
       }
@@ -302,8 +416,7 @@ function renderPixelArt() {
 
       const coverage = solidCount / totalCount;   // 密度 0~1
 
-      // **[修改]** 使用 finalDensityThreshold
-      // 用户手动控制的阈值决定是否绘制这个像素块
+      // 使用 finalDensityThreshold 决定是否绘制像素块
       if (coverage >= finalDensityThreshold) {
         let finalIdx = STATE.fontIdx;
         if (solidCount > 0) {
@@ -359,17 +472,19 @@ downloadBtn.addEventListener('click', ()=>{
 });
 
 resetBtn.addEventListener('click', ()=>{
-  textInput.value = '你好 Hello';
+  textInput.value = 'Hello Wplace\
+你好 Wplace';
   fontFamily.value = 'Dingmao Pixel';
   fontSize.value = 8;
   fontWeight.value = 400;
   fontStyle.value = 'normal';
   pixelSize.value = 1;
   thresholdInput.value = 0.5; 
-  canvasW.value = 35;
-  canvasH.value = 8;
+  canvasW.value = 43;
+  canvasH.value = 8; // 重置时确保是单行/列高度
   artEffect.value = 'none';
   bgMode.value = 'transparent';
+  writingMode.value = 'horizontal'; // <<< 新增重置
   STATE.fontIdx = 19; STATE.effectAIdx = 21; STATE.effectBIdx = 11; STATE.bgIdx = 5;
   refreshEffectLabels();
   updatePreviews();
@@ -432,7 +547,7 @@ Array.from(tabBtns).forEach(b=>{
 });
 
 // Live Updates: 这里必须包含 threshold
-['fontFamily','fontSize','fontWeight','fontStyle','pixelSize','threshold','canvasW','canvasH','bgMode'].forEach(id=>{
+['fontFamily','fontSize','fontWeight','fontStyle','pixelSize','threshold','canvasW','canvasH','bgMode', 'writingMode'].forEach(id=>{
   const node = el(id);
   if (node) node.addEventListener('input', ()=> renderPixelArtDebounced());
 });
@@ -444,6 +559,266 @@ window.addEventListener('resize', fitPreviewCanvasToContainer);
 refreshEffectLabels();
 updatePreviews();
 window.addEventListener('load', () => {
+  renderBtn.click();
+});
+renderBtn.click();
+
+const ALL_TRANSLATIONS = {
+    // 侧栏 (Sidebar)
+    "Wplace像素字转换器": "Wplace Pixel Text Converter",
+    "使用 64 色画板，将任意文本转换为Wplace像素化艺术字并导出图片": "Use a 64-color palette to convert any text into Wplace pixel art and export as an image",
+    "说明": "Instructions",
+    "1. 点击任一颜色块打开画板；画板分「非付费色」与「付费色」。光标悬停显示颜色名称。": "1. Click any color button to open the palette; it is split into 'Free' and 'Paid' colors. Hover to see the color name.",
+    "2. 丁卯点阵体的字号应设置为原字体大小加一的整倍数。比如丁卯点阵体（9px）的字体大小就要设置成10px的整倍数。": "2. The Dinkie Bitmap font size should be set to an integer multiple of the font's base size plus one. E.g., for the Dinkie Bitmap(9px), the size should be a multiple of 10px.",
+    "3. 绘制模式分为横排和竖排。横排模式对应单行高和总宽，竖排模式对应单列宽和总高。": "3. The drawing mode has two options : horizontal and vertical. Horizontal mode corresponds to single row height and total column width; vertical mode corresponds to single column width and total row height.",
+    "4. 绘制横排/竖排模式时，单行高/单列宽请设置为字号大小加2N。例如当字号为8时，单行高/单列宽的取值范围为8，10，12……": "4. When drawing in horizontal/vertical mode, single row height / column width should be set to font size plus 2N. For example, when font size is 8, the row height / column width should be 8, 10, 12, etc.",
+    "5. 若字体样式不满足预期，请点击“渲染预览”按钮重新渲染。若有按钮被遮住，请用Ctrl+滚轮调整页面比例。": "5. If the font style is not as expected, click the 'Render Preview' button to re-render. If any button is obscured, use Ctrl + Scroll to adjust the page zoom.",
+
+    // 主区 - 预览 (Main - Preview)
+    "预览": "Preview",
+    "使用画板 64 色映射输出像素艺术字": "Output pixel art using the 64-color palette mapping",
+    "背景": "Background",
+    "透明": "Transparent",
+    "纯色": "Solid Color",
+    "棋盘": "Checkerboard",
+
+    // 主区 - 控件 (Main - Controls) - 标签 (Labels)
+    "输入文字": "Input Text",
+    "字体": "Font",
+    "字号（px）": "Font Size (px)",
+    "粗细": "Weight",
+    "斜体": "Italic",
+    "颗粒度（一个像素的大小）": "Granularity (Pixel Size)",
+    "二值化阈值（控制字体精细度）": "Binarization Threshold (Fine-tune)",
+    "数值越小笔画越粗，数值越大笔画越细": "Lower value for thicker strokes, higher value for thinner strokes", // Input title
+    "书写方向": "Writing Mode",
+    "（单列）宽（px）": "(Col) Width (px)",
+    "（单行）高（px）": "(Row) Height (px)",
+    "艺术字效果": "Art Effect",
+    "字体色": "Font Color",
+    "点击选择颜色": "Click to select color", // Button title
+    "效果色 A": "Effect Color A",
+    "效果色 B": "Effect Color B",
+    
+    // 主区 - 控件 (Main - Controls) - 按钮
+    "渲染预览": "Render Preview",
+    "导出 PNG": "Export PNG",
+    "重置": "Reset",
+
+    // 下拉菜单选项 (Select Options)
+    'Arial（默认清晰）': 'Arial (Default Clear)',
+    '微软雅黑（Win 默认）': 'Microsoft YaHei (Win Default)',
+    '苹方 PingFang SC（macOS/iOS）': 'PingFang SC (macOS/iOS)',
+    '思源黑体': 'Source Han Sans',
+    '丁卯点阵体（7px）': 'Dinkie Bitmap (7px)',
+    '丁卯点阵体（9px）': 'Dinkie Bitmap (9px)',
+    '方正舒体': 'FZShuTi',
+    '站酷快乐体': 'ZCOOL KuaiLe',
+    '华文行楷': 'STXingkai',
+    '楷体': 'KaiTi',
+    '汇文明朝体（仿铅字印刷）': 'Huiwenmingchao (Printed)',
+    '汉仪长美黑（上世纪字体）': 'HanYiChangMeiHeiJian (Vintage)',
+    '方正小标宋': 'FangZheng XiaoBiaoSong',
+    '仿宋_GB2312': 'Fangsong_GB2312',
+    '毛体': 'Mao style',
+    '衡水体': 'HengShui style',
+    '中易宋体': 'SimSun',
+    'Serif（衬线）': 'Serif',
+    'Sans-Serif（无衬线）': 'Sans-Serif',
+    '细': 'Light',
+    '中': 'Medium',
+    '粗': 'Bold',
+    '厚重': 'Heavy',
+    '否': 'No',
+    '是': 'Yes',
+    '水平 (从左往右)': 'Horizontal (LTR)',
+    '垂直 (从右往左)': 'Vertical (RTL)',
+    '无': 'None',
+    '轮廓（描边）': 'Outline (Stroke)',
+    '投影': 'Shadow',
+    '渐变（两色）': 'Gradient (Two Colors)',
+    
+    // 弹窗 (Modal)
+    "选择颜色": "Select Color",
+    "关闭": "Close",
+    "非付费色": "Free Colors",
+    "付费色": "Paid Colors",
+    "悬停查看颜色名称；点击选择并赋值到当前目标。": "Hover to see color name; click to select and assign to the target.",
+    
+    // 动态更新的颜色标签文字 (在 refreshEffectLabels 处被处理)
+    '效果色 A（无效果）': 'Effect Color A (No Effect)',
+    '效果色 B（无效果）': 'Effect Color B (No Effect)',
+    '投影色': 'Shadow Color',
+    '无效': 'N/A',
+    '描边色 外': 'Outer Stroke',
+    '描边色 内': 'Inner Stroke',
+    '渐变色 A': 'Gradient A',
+    '渐变色 B': 'Gradient B',
+    '字体色（无效）': 'Font Color (N/A)',
+};
+
+// 2. 切换语言状态
+let isEnglish = false;
+
+// 3. 通用遍历函数：查找并替换文本
+function findAndReplaceText(parentNode, toEnglish) {
+    const map = ALL_TRANSLATIONS;
+    const targetMap = toEnglish ? map : Object.fromEntries(
+        Object.entries(map).map(([cn, en]) => [en, cn])
+    );
+    const sourceMap = toEnglish ? map : targetMap;
+
+    function walk(node) {
+        if (node.nodeType === 3) { // 文本节点
+            let text = node.nodeValue.trim();
+            if (text.length > 0) {
+                // 排除语言切换按钮自身的文本
+                if (node.parentNode && node.parentNode.id === 'langToggleBtn') {
+                    return;
+                }
+                
+                // 检查文本是否在源映射表中
+                const sourceKeys = Object.keys(sourceMap);
+                for (const key of sourceKeys) {
+                    if (key === text) {
+                        node.nodeValue = targetMap[key];
+                        break;
+                    }
+                }
+            }
+        } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') { // 元素节点
+            // 处理 Title 属性
+            if (node.hasAttribute('title')) {
+                const titleText = node.getAttribute('title');
+                if (sourceMap[titleText]) {
+                    node.setAttribute('title', targetMap[titleText]);
+                }
+            }
+            
+            // 递归遍历子节点
+            node.childNodes.forEach(walk);
+        }
+    }
+    
+    // 从根元素开始遍历
+    walk(parentNode);
+}
+
+// 4. 翻译主函数
+function translatePage(toEnglish) {
+    // 1. 通用遍历并替换所有可见文本节点和 title 属性
+    findAndReplaceText(document.body, toEnglish);
+
+    // 2. 特殊处理 <input> 的 title 属性（已在 findAndReplaceText 中处理，但这里可以再次明确处理，以防万一）
+    const thresholdInput = el('threshold');
+    if (thresholdInput && thresholdInput.title) {
+        const cnTitle = ALL_TRANSLATIONS['数值越小笔画越粗，数值越大笔画越细'];
+        const enTitle = 'Lower value for thicker strokes, higher value for thinner strokes';
+        if (toEnglish && thresholdInput.title === cnTitle) {
+             thresholdInput.title = enTitle;
+        } else if (!toEnglish && thresholdInput.title === enTitle) {
+             thresholdInput.title = cnTitle;
+        }
+    }
+    const titleKey = "Wplace像素字转换器";
+    
+    if (toEnglish) {
+        // 如果当前是中文标题，则切换到英文
+        if (document.title === titleKey) {
+            document.title = ALL_TRANSLATIONS[titleKey];
+        }
+    } else {
+        // 如果当前是英文标题，则切换回中文
+        if (document.title === ALL_TRANSLATIONS[titleKey]) {
+            document.title = titleKey;
+        }
+    }
+    
+    // 3. 更新动态生成的颜色标签文字
+    // 必须调用，因为 refreshEffectLabels 会根据 artEffect.value 动态设置标签文本
+    refreshEffectLabels();
+}
+
+
+// 5. 覆盖 refreshEffectLabels 以确保其使用正确的语言
+const originalRefreshEffectLabels = refreshEffectLabels;
+refreshEffectLabels = function() {
+    originalRefreshEffectLabels(); // 先执行原有逻辑设置中文/英文文本
+
+    // 无论当前是中文还是英文，都确保它被转换到当前 isEnglish 状态
+    const map = ALL_TRANSLATIONS;
+    
+    // 待转换的标签元素（假设它们已经在原始函数中被正确赋值）
+    const labels = [labelEffectA, labelEffectB, labelFont];
+
+    labels.forEach(label => {
+        const currentText = label.textContent.trim();
+        let newText = currentText;
+
+        if (isEnglish) {
+            // 查找中文 -> 英文
+            if (map[currentText]) {
+                newText = map[currentText];
+            }
+        } else {
+            // 查找英文 -> 中文
+            for (const cn in map) {
+                if (map[cn] === currentText) {
+                    newText = cn;
+                    break;
+                }
+            }
+        }
+
+        // 只有当文本发生变化时才更新，防止不必要的DOM操作
+        if (newText !== currentText) {
+            label.textContent = newText;
+        }
+    });
+};
+
+// 6. 绑定按钮事件
+const langToggleBtn = el('langToggleBtn'); 
+if (langToggleBtn) {
+    langToggleBtn.addEventListener('click', () => {
+        isEnglish = !isEnglish;
+        translatePage(isEnglish);
+        
+        // 确保语言按钮自身显示正确的状态
+        langToggleBtn.textContent = isEnglish ? '中文 / CN' : 'EN / 中';
+    });
+}
+
+// ==========================================================
+// 7. 新增自动语言检测逻辑
+// ==========================================================
+function autoDetectLanguage() {
+    // 检查浏览器语言，获取前两个字符（如 "zh" 或 "en"）
+    const lang = (navigator.language || navigator.userLanguage || '').toLowerCase().substring(0, 2);
+    
+    // 如果语言不是中文，则切换到英文
+    if (lang !== 'zh') {
+        isEnglish = true;
+        translatePage(isEnglish);
+        langToggleBtn.textContent = '中文 / CN'; // 英文模式下，按钮显示切换到中文
+    } else {
+        isEnglish = false;
+        langToggleBtn.textContent = 'EN / 中'; // 中文模式下，按钮显示切换到英文
+    }
+}
+
+
+// 8. 调整初始化逻辑，在 load 事件中执行自动检测
+// 确保初始状态正确（在 autoDetectLanguage 之前）
+// 重新执行一次 refreshEffectLabels 确保初始状态正确
+refreshEffectLabels();
+
+
+window.addEventListener('load', () => {
+  // 1. 自动检测语言并设置界面
+  autoDetectLanguage();
+  
+  // 2. 初始渲染
   renderBtn.click();
 });
 renderBtn.click();
