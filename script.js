@@ -25,6 +25,35 @@ const PAL = PALETTE.map((p,i)=>{
 // helpers
 function colorDist(c1, c2){ const dr=c1.r-c2.r, dg=c1.g-c2.g, db=c1.b-c2.b; return dr*dr+dg*dg+db*db; }
 function findNearestPaletteColor(rgb){ let best=1e12, idx=1; for (let i=1;i<PAL.length;i++){ const p=PAL[i]; const d=colorDist(rgb,p); if (d<best){best=d; idx=i;} } return {index:idx, color:PAL[idx]}; }
+function getCanvasBoundingBox(canvas, ctx) {
+    const w = canvas.width;
+    const h = canvas.height;
+    if (w === 0 || h === 0) return { x: 0, y: 0, w: 0, h: 0 };
+
+    const data = ctx.getImageData(0, 0, w, h).data;
+    let minX = w, minY = h, maxX = 0, maxY = 0;
+    let found = false;
+
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const idx = (y * w + x) * 4;
+            // 检查 Alpha 通道 (idx + 3)。使用 alpha > 10 来避免抗锯齿边缘被错误忽略。
+            if (data[idx + 3] > 10) { 
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+                found = true;
+            }
+        }
+    }
+
+    if (!found) return { x: 0, y: 0, w: 0, h: 0 };
+
+    const boxW = maxX - minX + 1;
+    const boxH = maxY - minY + 1;
+    return { x: minX, y: minY, w: boxW, h: boxH };
+}
 
 // DOM
 const el = id => document.getElementById(id);
@@ -58,7 +87,7 @@ let offCtx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
 let ctx = previewCanvas.getContext('2d');
 
 // state
-const STATE = { fontIdx: 21, effectAIdx: 21, effectBIdx: 11, bgIdx: 5 };
+const STATE = { fontIdx: 19, effectAIdx: 21, effectBIdx: 11, bgIdx: 5 };
 let modalOpenFor = 'font';
 let activeTab = 'free';
 
@@ -122,15 +151,15 @@ function drawSourceText(scaleFactor, userFontSize){
 
   const weight = fontWeight.value || '400';
   const style = fontStyle.value || 'normal';
-  const family = fontFamily.value || 'Arial';
+  const family = fontFamily.value || 'Dingmao Pixel';
   
-  sctx.textBaseline = 'middle';
-  sctx.textAlign = 'center';
+  sctx.textBaseline = 'top';
+  sctx.textAlign = 'left';
   sctx.font = `${style} normal ${weight} ${scaledSize}px ${family}`;
 
   const text = textInput.value || '';
-  const x = w/2;
-  const y = h/2;
+  const x = 0;
+  const y = 0;
 
   const fontC = PAL[STATE.fontIdx];
   const effA = PAL[STATE.effectAIdx];
@@ -176,19 +205,37 @@ function renderPixelArt() {
   const targetW      = parseInt(canvasW.value, 10);
   const targetH      = parseInt(canvasH.value, 10);
   const pSize        = parseInt(pixelSize.value, 10);
+  const currentFontFamily = fontFamily.value; // **[新增]** 获取当前字体
 
   // 用户手动输入的密度阈值（0.01~1.00），你原来的滑块
-  const densityThreshold = thresholdInput && thresholdInput.value 
+  const manualDensityThreshold = thresholdInput && thresholdInput.value 
     ? parseFloat(thresholdInput.value) 
-    : 0.35;
+    : 0.5;
 
-  // ====================== 3000px 暴力超采样 ======================
-  const BASE_FONT_SIZE = 50;                      // **[新增]** 基准字号，用于固定倍率
-  const ULTRA_TARGET = 3000;                     // 目标字体高度 ≈3000px
-  // **[修改]** scaleFactor 基于固定的 BASE_FONT_SIZE 计算
-  let scaleFactor = Math.floor(ULTRA_TARGET / BASE_FONT_SIZE); 
-
+  // ====================== 3000px 暴力超采样（或点阵字优化） ======================
+  const BASE_FONT_SIZE = 50;                      // 基准字号，用于固定倍率
+  const ULTRA_TARGET = 3000;                      // 目标字体高度 ≈3000px
   const HARD_MAX = 16384;                         // 浏览器单边安全上限
+
+  let scaleFactor;
+  let finalDensityThreshold;
+
+  // **[新增逻辑]** 丁卯点阵体和小字号的特殊处理：强制放大到字号 >= 100，并固定阈值为 0.1
+  if (currentFontFamily === 'Dingmao Pixel' && userFontSize < 100) {
+    // 1. 乘以最小整数倍让它大于等于 100
+    let scaleOverride = Math.ceil(100 / userFontSize);
+    scaleFactor = Math.max(2, scaleOverride); // 确保至少是 2 倍
+    
+    // 2. 固定二值化阈值为 0.1 (覆盖率阈值)
+    finalDensityThreshold = 0.1;
+    
+  } else {
+    // 默认的 3000px 暴力超采样逻辑
+    scaleFactor = Math.floor(ULTRA_TARGET / BASE_FONT_SIZE); 
+    finalDensityThreshold = manualDensityThreshold; // 使用用户输入的阈值
+  }
+  
+  // HARD_MAX 限制必须应用于两种情况
   scaleFactor = Math.min(scaleFactor,
     Math.floor(HARD_MAX / Math.max(targetW, 1)),
     Math.floor(HARD_MAX / Math.max(targetH, 1))
@@ -242,7 +289,7 @@ function renderPixelArt() {
 
           totalCount++;
 
-          if (a >= 250) {                    // 固定透明度硬阈值 128
+          if (a >= 128) {                    // 固定透明度硬阈值 250
             solidCount++;
             rSum += srcData[idx];
             gSum += srcData[idx + 1];
@@ -255,8 +302,9 @@ function renderPixelArt() {
 
       const coverage = solidCount / totalCount;   // 密度 0~1
 
+      // **[修改]** 使用 finalDensityThreshold
       // 用户手动控制的阈值决定是否绘制这个像素块
-      if (coverage >= densityThreshold) {
+      if (coverage >= finalDensityThreshold) {
         let finalIdx = STATE.fontIdx;
         if (solidCount > 0) {
           const avgR = Math.round(rSum / solidCount);
@@ -311,18 +359,18 @@ downloadBtn.addEventListener('click', ()=>{
 });
 
 resetBtn.addEventListener('click', ()=>{
-  textInput.value = '像素 字示例 你好';
-  fontFamily.value = 'Arial';
-  fontSize.value = 50;
+  textInput.value = '你好 Hello';
+  fontFamily.value = 'Dingmao Pixel';
+  fontSize.value = 8;
   fontWeight.value = 400;
   fontStyle.value = 'normal';
-  pixelSize.value = 4;
-  thresholdInput.value = 0.85; 
-  canvasW.value = 400;
-  canvasH.value = 400;
+  pixelSize.value = 1;
+  thresholdInput.value = 0.5; 
+  canvasW.value = 35;
+  canvasH.value = 8;
   artEffect.value = 'none';
   bgMode.value = 'transparent';
-  STATE.fontIdx = 21; STATE.effectAIdx = 21; STATE.effectBIdx = 11; STATE.bgIdx = 5;
+  STATE.fontIdx = 19; STATE.effectAIdx = 21; STATE.effectBIdx = 11; STATE.bgIdx = 5;
   refreshEffectLabels();
   updatePreviews();
   renderPixelArt();
@@ -395,4 +443,7 @@ window.addEventListener('resize', fitPreviewCanvasToContainer);
 // Init
 refreshEffectLabels();
 updatePreviews();
-document.addEventListener('DOMContentLoaded', renderPixelArt);
+window.addEventListener('load', () => {
+  renderBtn.click();
+});
+renderBtn.click();

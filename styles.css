@@ -10,7 +10,9 @@
 *{box-sizing:border-box}
 
 /* 全局禁止任何浏览器滚动条，所有 UI 元素必须在视口内自适应 */
-html,body{height:100%;margin:0;font-family:var(--ui-font);background:var(--bg-1);color:#e6eef8;-webkit-font-smoothing:antialiased;overflow:hidden}
+html,body{height:100%;margin:0;font-family:var(--ui-font);background:var(--bg-1);color:#e6eef8;transform: scale(0.98); 
+  transform-origin: top left;width: calc(100% / 0.98);
+  height: calc(100% / 0.98);-webkit-font-smoothing:antialiased;overflow:hidden}
 
 /* 应用主容器：固定视口高度，两栏布局 */
 .app{height:100vh;display:grid;grid-template-columns:360px 1fr;gap:18px;padding:18px;box-sizing:border-box}
