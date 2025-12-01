@@ -14,11 +14,95 @@ const PALETTE = [
   [179,185,209], [109,100,63], [148,140,107], [205,197,158]
 ];
 
+// ==========================================================
+// 🎨 新增：RGB 字符串到颜色名称的映射表
+// ==========================================================
+const RGB_TO_NAME_MAP = {
+    "0,0,0": "Black",
+    "60,60,60": "Dark Gray",
+    "120,120,120": "Gray",
+    "210,210,210": "Light Gray",
+    "255,255,255": "White",
+    "96,0,24": "Deep Red",
+    "237,28,36": "Red",
+    "255,127,39": "Orange",
+    "246,170,9": "Gold",
+    "249,221,59": "Yellow",
+    "255,250,188": "Light Yellow",
+    "14,185,104": "Dark Green",
+    "19,230,123": "Green",
+    "135,255,94": "Light Green",
+    "12,129,110": "Dark Teal",
+    "16,174,166": "Teal",
+    "19,225,190": "Light Teal",
+    "40,80,158": "Dark Blue",
+    "64,147,228": "Blue",
+    "96,247,242": "Cyan",
+    "107,80,246": "Indigo",
+    "153,177,251": "Light Indigo",
+    "120,12,153": "Dark Purple",
+    "170,56,185": "Purple",
+    "224,159,249": "Light Purple",
+    "203,0,122": "Dark Pink",
+    "236,31,128": "Pink",
+    "243,141,169": "Light Pink",
+    "104,70,52": "Dark Brown",
+    "149,104,42": "Brown",
+    "248,178,119": "Beige", // 248,178,119
+    "170,170,170": "Medium Gray",
+    "145,14,30": "Dark Red",
+    "250,128,114": "Light Red",
+    "228,92,26": "Dark Orange",
+    "214,181,148": "Light Tan",
+    "156,132,49": "Dark Goldenrod",
+    "197,173,49": "Goldenrod",
+    "232,212,95": "Light Goldenrod",
+    "74,107,58": "Dark Olive",
+    "90,148,74": "Olive",
+    "132,197,115": "Light Olive",
+    "15,121,159": "Dark Cyan",
+    "187,250,242": "Light Cyan",
+    "125,199,255": "Light Blue",
+    "77,49,184": "Dark Indigo",
+    "74,66,132": "Dark Slate Blue",
+    "122,113,196": "Slate Blue",
+    "181,174,241": "Light Slate Blue",
+    "219,164,99": "Light Brown",
+    "209,128,81": "Dark Beige",
+    "255,197,165": "Light Beige",
+    "155,82,73": "Dark Peach",
+    "209,128,120": "Peach",
+    "250,182,164": "Light Peach",
+    "123,99,82": "Dark Tan",
+    "156,132,107": "Tan",
+    "51,57,65": "Dark Slate",
+    "109,117,141": "Slate",
+    "179,185,209": "Light Slate",
+    "109,100,63": "Dark Stone",
+    "148,140,107": "Stone",
+    "205,197,158": "Light Stone"
+};
+
+
 // Normalize palette
+// ==========================================================
+// ✏️ 修改：使用 RGB_TO_NAME_MAP 查找正确的颜色名称
+// ==========================================================
 const PAL = PALETTE.map((p,i)=>{
   if (i===0) return {r:0,g:0,b:0,a:0,name:'Transparent'};
-  const obj = Array.isArray(p) ? {r:p[0],g:p[1],b:p[2],a:255} : p;
-  obj.name = obj.name || `Color ${i}`;
+  
+  // 确定 RGB 数组
+  const rgbArray = Array.isArray(p) ? p : p.rgb;
+  const r = rgbArray[0], g = rgbArray[1], b = rgbArray[2];
+  
+  // 构造查找键
+  const rgbKey = `${r},${g},${b}`;
+  
+  // 查找名称，如果找不到，则使用默认的 Color X
+  const name = RGB_TO_NAME_MAP[rgbKey] || `Color ${i}`;
+
+  const obj = {r:r, g:g, b:b, a:255, name:name};
+  
   return obj;
 });
 
@@ -246,7 +330,7 @@ function renderPixelArt() {
   const userFontSize = parseInt(fontSize.value, 10);
   const targetUnitW  = parseInt(canvasW.value, 10); // 水平模式下是行宽，垂直模式下是列宽
   const targetUnitH  = parseInt(canvasH.value, 10); // 水平模式下是单行高，垂直模式下是单列高
-  const pSize        = parseInt(pixelSize.value, 10);
+  const pSize        = parseInt(pixelSize.value, 10) || 1;
   const currentFontFamily = fontFamily.value; 
   const isVertical = writingMode.value === 'vertical'; // <<< 获取书写方向
 
@@ -509,7 +593,8 @@ function renderModalPalette(){
     btn.className = 'mSwatch';
     btn.type = 'button';
     btn.dataset.index = i;
-    btn.title = `${i}: ${p.name}`;
+    // ✏️ 修改：在 title 中添加了颜色名称
+    btn.title = `${i}: ${p.name}`; 
     btn.style.background = p.a===0 ? 'linear-gradient(45deg,#eee 0%, #ccc 100%)' : `rgb(${p.r},${p.g},${p.b})`;
     btn.addEventListener('click', ()=> { assignPaletteIndexToTarget(parseInt(btn.dataset.index,10)); closePalette(); });
     modalPalette.appendChild(btn);
