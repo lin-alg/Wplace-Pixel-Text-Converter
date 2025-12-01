@@ -5,14 +5,23 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>像素字转换器</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+  /* 字体定义保持不变 */
+  @font-face { font-family: 'Dingmao Pixel'; src: url('./fonts/dingmaodianzhen.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'ZhiXie Ti'; src: url('https://cdn.jsdelivr.net/gh/max32002/zhixie@latest/ZhiXieTi.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'ZhanKu KuaiLe Ti'; src: url('./fonts/ZhanKuKuaiLeTi2016XiuDingBan-1.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'FangZheng ShuTi'; src: url('https://cdn.jsdelivr.net/gh/max32002/fangzhengshuti@latest/FangZhengShuTi.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'HengShui Ti'; src: url('./fonts/hengshuiti.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'XingKai'; src: url('./fonts/华文行楷.ttf') format('truetype'); font-display: swap; }
+  @font-face { font-family: 'MaoTi'; src: url('./fonts/maozedong-1.ttf') format('truetype'); font-display: swap; } 
+  @font-face { font-family: 'SourceHanSansK-ExtraLight'; src: url('./fonts/思源黑体SourceHanSansK-ExtraLight.ttf') format('truetype'); font-display: swap; } 
+  </style>
 </head>
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-G048820J9K"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-G048820J9K');
 </script>
 <body>
@@ -48,38 +57,46 @@
 
         <section class="controls" aria-label="Controls Panel">
           <label class="fieldLabel">输入文字</label>
-          <textarea id="textInput">像素 字示例 你好</textarea>
+          <textarea id="textInput">你好 Hello</textarea>
 
           <div class="formRow">
             <div class="field">
               <label class="fieldLabel">字体</label>
               <select id="fontFamily">
-                <option>Arial</option>
-                <option>Helvetica</option>
-                <option>Times New Roman</option>
-                <option>Courier New</option>
-                <option>Georgia</option>
-                <option>SimSun</option>
-                <option>SimHei</option>
-                <option>Microsoft YaHei</option>
-                <option>PingFang SC</option>
-                <option>Noto Sans SC</option>
-                <option>Source Han Sans CN</option>
-                <option>Serif</option>
-                <option>Sans-Serif</option>
+                <option value="Arial" selected>Arial（默认清晰）</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Microsoft YaHei">微软雅黑（Win 默认）</option>
+                <option value="PingFang SC">苹方 PingFang SC（macOS/iOS）</option>
+                <option value="SourceHanSansK-ExtraLight">思源黑体</option>
+                <option value="Dingmao Pixel">丁卯点阵体（像素专用）</option>
+                <option value="ZhiXie Ti">像素字（极致像素感）</option>
+                <option value="FangZheng ShuTi">方正舒体</option>
+                <option value="ZhanKu KuaiLe Ti">站酷快乐体</option>
+                <option value="XingKai">华文行楷</option>
+                <option value="KaiTi">楷体</option>
+                <option value="FangZheng XiaoBiaoSong">方正小标宋</option>
+                <option value="MaoTi">毛体</option>
+                <option value="HengShui Ti">衡水体</option>
+                <option value="Consolas">Consolas</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="SimSun">中易宋体</option>
+                <option value="Serif">Serif（衬线）</option>
+                <option value="Sans-Serif">Sans-Serif（无衬线）</option>
               </select>
             </div>
 
             <div class="field">
               <label class="fieldLabel">字号（px）</label>
-              <input id="fontSize" type="number" min="8" max="400" value="120" />
+              <input id="fontSize" type="number" min="8" max="400" value="50" />
             </div>
           </div>
 
           <div class="formRow">
             <div class="field">
               <label class="fieldLabel">粗细</label>
-              <select id="fontWeight"><option value="300">Light</option><option value="400" selected>Normal</option><option value="600">Semi-Bold</option><option value="700">Bold</option></select>
+              <select id="fontWeight"><option value="300" selected>Light</option><option value="400">Normal</option><option value="600">Semi-Bold</option><option value="700">Bold</option></select>
             </div>
 
             <div class="field">
@@ -91,12 +108,19 @@
           <div class="formRow">
             <div class="field">
               <label class="fieldLabel">颗粒度（像素大小）</label>
-              <input id="pixelSize" type="number" min="1" max="40" value="8" />
+              <input id="pixelSize" type="number" min="1" max="40" value="4" />
             </div>
 
             <div class="field">
+              <label class="fieldLabel">二值化阈值 (0-1)</label>
+              <input id="threshold" type="number" min="0.01" max="1.00" step="0.01" value="0.35" title="数值越小笔画越粗，数值越大笔画越细" />
+            </div>
+          </div>
+          
+          <div class="formRow">
+            <div class="field">
               <label class="fieldLabel">画布宽（px）</label>
-              <input id="canvasW" type="number" min="64" max="5000" value="1200" />
+              <input id="canvasW" type="number" min="64" max="5000" value="400" />
             </div>
 
             <div class="field">
@@ -149,7 +173,6 @@
     </section>
   </main>
 
-  <!-- 弹出画板模态框 -->
   <div id="paletteModal" class="modal hidden" aria-hidden="true">
     <div class="modalBackdrop"></div>
     <div class="modalCard" role="dialog" aria-modal="true" aria-label="色板选择">
