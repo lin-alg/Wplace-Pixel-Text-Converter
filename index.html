@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>像素字转换器</title>
+  <title>Wplace像素字转换器</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
   /* 字体定义保持不变 */
@@ -15,6 +15,10 @@
   @font-face { font-family: 'XingKai'; src: url('./fonts/华文行楷.ttf') format('truetype'); font-display: swap; }
   @font-face { font-family: 'MaoTi'; src: url('./fonts/maozedong-1.ttf') format('truetype'); font-display: swap; } 
   @font-face { font-family: 'SourceHanSansK-ExtraLight'; src: url('./fonts/思源黑体SourceHanSansK-ExtraLight.ttf') format('truetype'); font-display: swap; } 
+  @font-face { font-family: 'Dingmao Pixel_9px'; src: url('./fonts/dingmao_9px.ttf') format('truetype'); font-display: swap; } 
+  @font-face { font-family: 'FangZheng ShuTi'; src: url('./fonts/方正舒体.TTF') format('truetype'); font-display: swap; } 
+  @font-face { font-family: 'FangZheng XiaoBiaoSong'; src: url('./fonts/方正小标宋.TTF') format('truetype'); font-display: swap; } 
+  @font-face { font-family: 'Huiwenmingchao'; src: url('./fonts/Huiwenminchao.ttf') format('truetype'); font-display: swap; } 
   </style>
 </head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-G048820J9K"></script>
@@ -33,7 +37,13 @@
       </header>
 
       <section class="sidebarInfo">
-        <p class="sidebarFoot">点击任一色块打开画板；画板分「非付费色」与「付费色」。悬停显示颜色名称。</p>
+        <p class="sidebarFoot">点击任一色块打开画板；画板分「非付费色」与「付费色」。鼠标悬停显示颜色名称。</p>
+      </section>
+      <section class="sidebarInfo">
+        <p class="sidebarFoot">丁卯点阵体的字体大小应设置为宽度加一的整倍数。比如丁卯点阵体（9px）的字体大小就要设置成10px的整倍数</p>
+      </section>
+      <section class="sidebarInfo">
+        <p class="sidebarFoot">若字体样式不满足预期，请点击“渲染预览”按钮重新渲染。若有按钮被遮住，请用Ctrl+滚轮调整页面比例</p>
       </section>
     </aside>
 
@@ -46,7 +56,7 @@
 
         <div class="controlsInline">
           <label>背景</label>
-          <select id="bgMode"><option value="transparent" selected>透明</option><option value="solid">纯色</option><option value="checker">棋盘</option></select>
+          <select id="bgMode"><option value="transparent">透明</option><option value="solid" selected>纯色</option><option value="checker">棋盘</option></select>
         </div>
       </div>
 
@@ -63,17 +73,18 @@
             <div class="field">
               <label class="fieldLabel">字体</label>
               <select id="fontFamily">
-                <option value="Arial" selected>Arial（默认清晰）</option>
+                <option value="Arial">Arial（默认清晰）</option>
                 <option value="Helvetica">Helvetica</option>
                 <option value="Microsoft YaHei">微软雅黑（Win 默认）</option>
                 <option value="PingFang SC">苹方 PingFang SC（macOS/iOS）</option>
                 <option value="SourceHanSansK-ExtraLight">思源黑体</option>
-                <option value="Dingmao Pixel">丁卯点阵体（像素专用）</option>
-                <option value="ZhiXie Ti">像素字（极致像素感）</option>
+                <option value="Dingmao Pixel" selected>丁卯点阵体（7px）</option>
+                <option value="Dingmao Pixel_9px">丁卯点阵体（9px）</option>
                 <option value="FangZheng ShuTi">方正舒体</option>
                 <option value="ZhanKu KuaiLe Ti">站酷快乐体</option>
                 <option value="XingKai">华文行楷</option>
                 <option value="KaiTi">楷体</option>
+                <option value="Huiwenmingchao">汇文明朝体（仿铅字印刷）</option>
                 <option value="FangZheng XiaoBiaoSong">方正小标宋</option>
                 <option value="MaoTi">毛体</option>
                 <option value="HengShui Ti">衡水体</option>
@@ -89,14 +100,14 @@
 
             <div class="field">
               <label class="fieldLabel">字号（px）</label>
-              <input id="fontSize" type="number" min="8" max="400" value="50" />
+              <input id="fontSize" type="number" min="8" max="400" value="8" />
             </div>
           </div>
 
           <div class="formRow">
             <div class="field">
               <label class="fieldLabel">粗细</label>
-              <select id="fontWeight"><option value="300" selected>Light</option><option value="400">Normal</option><option value="600">Semi-Bold</option><option value="700">Bold</option></select>
+              <select id="fontWeight"><option value="300" selected>细</option><option value="400">中</option><option value="600">粗</option><option value="700">厚重</option></select>
             </div>
 
             <div class="field">
@@ -107,25 +118,25 @@
 
           <div class="formRow">
             <div class="field">
-              <label class="fieldLabel">颗粒度（像素大小）</label>
-              <input id="pixelSize" type="number" min="1" max="40" value="4" />
+              <label class="fieldLabel">颗粒度（一个像素的大小）</label>
+              <input id="pixelSize" type="number" min="1" max="40" value="1" />
             </div>
 
             <div class="field">
-              <label class="fieldLabel">二值化阈值 (0-1)</label>
-              <input id="threshold" type="number" min="0.01" max="1.00" step="0.01" value="0.35" title="数值越小笔画越粗，数值越大笔画越细" />
+              <label class="fieldLabel">二值化阈值（控制字体精细度）</label>
+              <input id="threshold" type="number" min="0.01" max="1.00" step="0.01" value="0.5" title="数值越小笔画越粗，数值越大笔画越细" />
             </div>
           </div>
           
           <div class="formRow">
             <div class="field">
               <label class="fieldLabel">画布宽（px）</label>
-              <input id="canvasW" type="number" min="64" max="5000" value="400" />
+              <input id="canvasW" type="number" min="64" max="5000" value="35" />
             </div>
 
             <div class="field">
               <label class="fieldLabel">画布高（px）</label>
-              <input id="canvasH" type="number" min="64" max="5000" value="400" />
+              <input id="canvasH" type="number" min="64" max="5000" value="8" />
             </div>
           </div>
 
