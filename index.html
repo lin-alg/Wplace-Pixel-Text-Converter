@@ -115,6 +115,10 @@
                 <option value="Sans-Serif">Sans-Serif（无衬线）</option>
                 <option value="Minecraft_AE">Minecraft_AE</option>
               </select>
+              <div style="margin-top: 6px; display: flex; gap: 5px;">
+                <input type="file" id="customFontInput" accept=".ttf,.otf,.woff,.woff2" style="display: none;" />
+                <button type="button" class="btn" id="triggerFontUpload" style="padding: 4px 8px; font-size: 12px; flex: 1; margin: 0;">📁 上传本地字体文件</button>
+              </div>
             </div>
 
             <div class="field">
@@ -232,5 +236,50 @@
   </div>
 
   <script src="script.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const fontInput = document.getElementById('customFontInput');
+      const uploadBtn = document.getElementById('triggerFontUpload');
+      const fontFamilySelect = document.getElementById('fontFamily');
+
+      if (fontInput && uploadBtn && fontFamilySelect) {
+        uploadBtn.addEventListener('click', () => {
+          fontInput.click();
+        });
+
+        fontInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const customFontName = 'CustomFont_' + Math.random().toString(36).substring(2, 9);
+          const fontUrl = URL.createObjectURL(file);
+          
+          const fontFace = new FontFace(customFontName, `url(${fontUrl})`);
+
+          fontFace.load().then((loadedFace) => {
+            document.fonts.add(loadedFace);
+
+            const newOption = document.createElement('option');
+            newOption.value = customFontName;
+            newOption.textContent = `⭐ 自定义: ${file.name}`;
+            newOption.selected = true;
+
+            fontFamilySelect.insertBefore(newOption, fontFamilySelect.firstChild);
+
+            fontFamilySelect.dispatchEvent(new Event('change'));
+            
+            const renderBtn = document.getElementById('renderBtn');
+            if (renderBtn) {
+              renderBtn.click();
+            }
+          }).catch((error) => {
+            console.error('字体加载失败:', error);
+            alert('该文件可能不是标准的字体文件，请确保使用 .ttf、.otf、.woff 或 .woff2 格式。');
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>
